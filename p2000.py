@@ -63,15 +63,20 @@ def flusher(client):
             print(f"[pub] {sorted(item['capcodes'])} {item['text'][:80]}", flush=True)
 
 
+def on_connect(client, userdata, flags, rc, properties=None):
+    client.publish(f"{TOPIC}/status", "online", qos=1, retain=True)
+    print(f"[mqtt] verbonden (rc={rc})", flush=True)
+
+
 def main():
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="p2000-decoder")
     if MQTT_USER:
         client.username_pw_set(MQTT_USER, MQTT_PASS)
     client.will_set(f"{TOPIC}/status", "offline", qos=1, retain=True)
+    client.on_connect = on_connect
     client.connect(MQTT_HOST, MQTT_PORT, keepalive=60)
     client.loop_start()
-    client.publish(f"{TOPIC}/status", "online", qos=1, retain=True)
-
+    
     rtl = subprocess.Popen(
         ["rtl_fm", "-f", FREQ, "-M", "fm", "-s", "22050", "-g", GAIN, "-p", PPM, "-"],
         stdout=subprocess.PIPE)
